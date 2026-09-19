@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#1a2a4a" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<title>Saurav Dictionary</title>
+<style>
+  :root{
+    --text:#f0f4ff;
+    --muted:#b8c7e0;
+    --danger:#fca5a5;
+    --blue:#7eb6ff;
+    --accent:#5b9cff;
+    --card-bg:linear-gradient(165deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.08) 40%,rgba(120,90,220,.16) 100%);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(160deg,#1a2a4a 0%,#2d1b4e 50%,#1e3a5f 100%);
+    background-attachment:fixed;color:var(--text);overflow-x:hidden;
+    display:flex;flex-direction:column;min-height:100vh;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  body::before{content:"";position:fixed;inset:0;
+    background:radial-gradient(circle at 20% 25%,rgba(126,182,255,.18) 0,transparent 45%),
+               radial-gradient(circle at 80% 70%,rgba(167,139,250,.15) 0,transparent 45%);
+    pointer-events:none;z-index:0;}
+
+  /* ---- header ---- */
+  .header{
+    position:relative;z-index:10;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px 8px;
+  }
+  .header h1{
+    font-family:Georgia,serif;font-style:italic;font-size:24px;color:#fff;
+    text-shadow:0 2px 12px rgba(0,0,0,.35);flex:1;text-align:center;
+    margin-left:36px; /* balance hamburger */
+  }
+  .menuBtn{
+    width:40px;height:40px;border:0;border-radius:12px;
+    background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);
+    color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+    flex-shrink:0;
+  }
+  .menuBtn span{display:block;width:18px;height:2px;background:#fff;border-radius:2px;}
+
+  /* ---- search ---- */
+  .search-wrap{
+    position:relative;z-index:5;
+    padding:8px 18px 16px;
+  }
+  .search{
+    display:flex;gap:10px;
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.25);
+    border-radius:16px;
+    padding:6px 6px 6px 16px;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  }
+  #w{
+    flex:1;min-width:0;border:0;background:transparent;
+    font-size:16px;color:#fff;outline:none;padding:10px 0;
+  }
+  #w::placeholder{color:#94a9c9;}
+  #go{
+    padding:0 20px;border:0;border-radius:12px;
+    background:linear-gradient(135deg,#5b9cff,#7c5cfc);
+    color:#fff;font-size:14.5px;font-weight:600;
+    box-shadow:0 4px 14px rgba(91,156,255,.35);
+  }
+  #go:disabled{background:#4a5568;box-shadow:none;}
+
+  /* ---- mode badge ---- */
+  .mode-badge{
+    position:relative;z-index:5;
+    text-align:center;font-size:12px;color:var(--muted);
+    padding:0 18px 12px;
+  }
+  .mode-badge span{
+    display:inline-block;background:rgba(126,182,255,.18);
+    border:1px solid rgba(126,182,255,.3);
+    color:#cde6ff;padding:4px 12px;border-radius:20px;font-size:12px;
+  }
+
+  /* ---- results area ---- */
+  .results{
+    flex:1;position:relative;z-index:5;
+    padding:0 16px 24px;
+    overflow-y:auto;
+  }
+  .card{
+    border-radius:22px;padding:22px 18px 24px;
+    background:var(--card-bg);
+    backdrop-filter:blur(24px) saturate(1.5);-webkit-backdrop-filter:blur(24px) saturate(1.5);
+    border:1px solid rgba(255,255,255,.28);
+    box-shadow:0 12px 40px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.25);
+  }
+  .card.hidden{display:none;}
+
+  .hd{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px;}
+  .word-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .word{font-size:28px;font-weight:700;color:#fff;word-break:break-word;line-height:1.15;}
+  .online-badge{
+    font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;
+    background:rgba(94,234,212,.2);border:1px solid rgba(94,234,212,.4);
+    color:#99f6e4;padding:2px 8px;border-radius:8px;
+  }
+  .ipa{font-size:15px;color:#a5d0ff;font-style:italic;margin-top:4px;}
+  .spk{
+    background:linear-gradient(135deg,#5b9cff,#4f8aef);border:0;color:#fff;border-radius:14px;
+    width:46px;height:46px;font-size:18px;flex-shrink:0;
+    box-shadow:0 4px 14px rgba(91,156,255,.35);
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .sec{margin-top:18px;}
+  .sec h4{
+    font-size:11px;text-transform:uppercase;letter-spacing:1.3px;
+    color:#9ec5ff;margin-bottom:8px;font-weight:600;
+  }
+  .hindi{font-size:22px;color:#ffe8a3;font-weight:500;line-height:1.35;}
+  .pos{
+    display:inline-block;
+    background:linear-gradient(135deg,#5b9cff,#7c5cfc);
+    color:#fff;font-size:11px;padding:4px 11px;border-radius:9px;
+    margin-bottom:10px;text-transform:uppercase;font-weight:600;letter-spacing:.4px;
+  }
+  .def{
+    margin-bottom:10px;padding:12px 14px;border-radius:12px;
+    background:rgba(255,255,255,.08);
+    border-left:3px solid var(--blue);
+    font-size:14.5px;line-height:1.55;color:#e8eef8;
+  }
+  .def em{display:block;margin-top:6px;color:#a8bdd8;font-size:13px;font-style:italic;}
+  .tags{display:flex;flex-wrap:wrap;gap:8px;}
+  .tag{
+    background:rgba(126,182,255,.18);border:1px solid rgba(126,182,255,.3);
+    color:#cde6ff;font-size:13px;padding:6px 12px;border-radius:20px;
+  }
+  .tag.ant{background:rgba(252,165,165,.14);border-color:rgba(252,165,165,.3);color:#ffc9c9;}
+  .none{color:#8aa0c0;font-size:14px;}
+
+  .load{text-align:center;padding:40px 16px;color:var(--muted);}
+  .spin{
+    width:34px;height:34px;border:3px solid rgba(255,255,255,.15);
+    border-top-color:var(--blue);border-radius:50%;
+    animation:s .75s linear infinite;margin:0 auto 14px;
+  }
+  @keyframes s{to{transform:rotate(360deg)}}
+  .err{color:var(--danger);text-align:center;padding:28px 12px;font-size:15px;line-height:1.5;}
+  .err small{display:block;margin-top:10px;color:#9db0d0;font-size:13px;}
+
+  .empty-hint{
+    text-align:center;padding:48px 24px;color:var(--muted);font-size:15px;line-height:1.6;
+  }
+  .empty-hint p{margin-top:8px;font-size:13px;opacity:.8;}
+
+  footer{
+    position:relative;z-index:1;text-align:center;font-size:11px;
+    color:rgba(255,255,255,.35);padding:12px 16px calc(14px + env(safe-area-inset-bottom));
+  }
+
+  /* ---- side menu ---- */
+  .menu-overlay{
+    position:fixed;inset:0;background:rgba(8,12,24,.55);
+    backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
+    z-index:90;opacity:0;visibility:hidden;transition:opacity .25s,visibility .25s;
+  }
+  .menu-overlay.open{opacity:1;visibility:visible;}
+  .side-menu{
+    position:fixed;top:0;right:0;bottom:0;width:280px;max-width:82vw;
+    background:linear-gradient(180deg,#1e2a4a 0%,#2a1f4e 100%);
+    border-left:1px solid rgba(255,255,255,.15);
+    z-index:100;transform:translateX(100%);
+    transition:transform .3s cubic-bezier(.22,1,.36,1);
+    display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+  }
+  .menu-overlay.open .side-menu{transform:translateX(0);}
+  .menu-head{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:18px 16px 14px;border-bottom:1px solid rgba(255,255,255,.1);
+  }
+  .menu-head h3{font-size:16px;font-weight:600;color:#fff;}
+  .menu-close{
+    width:34px;height:34px;border:0;border-radius:50%;
+    background:rgba(255,255,255,.12);color:#fff;font-size:20px;
+  }
+  .menu-list{flex:1;overflow-y:auto;padding:12px 0;}
+  .menu-item{
+    display:block;width:100%;text-align:left;border:0;
+    background:transparent;color:#e0e8f8;font-size:15px;
+    padding:14px 20px;cursor:pointer;
+    transition:background .15s;
+  }
+  .menu-item:hover,.menu-item:active{background:rgba(255,255,255,.08);}
+  .menu-item.active{
+    background:rgba(91,156,255,.2);color:#a5d0ff;
+    border-left:3px solid var(--accent);
+  }
+  .menu-item small{display:block;font-size:11.5px;color:#8aa0c0;margin-top:3px;}
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Saurav Dictionary</h1>
+    <button class="menuBtn" id="menuBtn" aria-label="Open menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search">
+      <input id="w" type="text" placeholder="Type any word…" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search" />
+      <button id="go">Look up</button>
+    </div>
+  </div>
+
+  <div class="mode-badge" id="modeBadge">
+    <span>English → Hindi</span>
+  </div>
+
+  <div class="results" id="results">
+    <div class="empty-hint" id="emptyHint">
+      Type a word above and press Look up<br>
+      <p>Works offline for many common words</p>
+    </div>
+    <div class="card hidden" id="card"></div>
+  </div>
+
+  <footer>Designed and Developed by 100,000,000,000</footer>
+
+  <!-- Side menu -->
+  <div class="menu-overlay" id="menuOverlay">
+    <div class="side-menu">
+      <div class="menu-head">
+        <h3>Dictionary Mode</h3>
+        <button class="menu-close" id="menuClose">×</button>
+      </div>
+      <div class="menu-list">
+        <button class="menu-item active" data-mode="en-hi">
+          English to Hindi Meaning
+          <small>Word + Hindi + English definitions</small>
+        </button>
+        <button class="menu-item" data-mode="hi-en">
+          Hindi to English Meaning
+          <small>Hindi word → English translation &amp; defs</small>
+        </button>
+        <button class="menu-item" data-mode="en-en">
+          English to English Meaning
+          <small>Definitions only (no Hindi)</small>
+        </button>
+        <button class="menu-item" data-mode="syn">
+          Only Synonyms
+          <small>Show synonyms for the word</small>
+        </button>
+        <button class="menu-item" data-mode="ant">
+          Only Antonyms
+          <small>Show antonyms for the word</small>
+        </button>
+      </div>
+    </div>
+  </div>
+
+<script>
+"use strict";
+
+/* ---------------- Offline dictionary (works with zero internet) ---------------- */
+/* [ ipa, hindi, [ [pos, def, example], ... ], [synonyms], [antonyms] ] */
+const DB = {
+hello:["/həˈləʊ/","नमस्ते",[["interjection","A greeting said when meeting someone or answering the phone.","Hello, everyone."],["verb","To greet with “hello”."]],["hi","greetings","hey"],["goodbye","farewell"]],
+goodbye:["/ɡʊdˈbaɪ/","अलविदा",[["interjection","Said when parting or ending a conversation."]],["farewell","bye","adieu"],["hello","greeting"]],
+speech:["/spiːtʃ/","भाषण / वाणी",[["noun","The expression of thoughts and feelings by articulate sounds."],["noun","A formal address delivered to an audience.","She gave a rousing speech."]],["address","talk","oration"],["silence"]],
+pronunciation:["/prəˌnʌnsiˈeɪʃn/","उच्चारण",[["noun","The way in which a word is pronounced."]],["articulation","diction","enunciation"],[]],
+beautiful:["/ˈbjuːtɪfl/","सुंदर",[["adjective","Pleasing the senses or mind aesthetically."],["adjective","Of a very high standard; excellent."]],["lovely","gorgeous","stunning","exquisite"],["ugly","hideous"]],
+courage:["/ˈkʌrɪdʒ/","साहस",[["noun","The ability to do something that frightens one; bravery.","It took courage to speak up."]],["bravery","valour","nerve","grit"],["cowardice","fear"]],
+knowledge:["/ˈnɒlɪdʒ/","ज्ञान",[["noun","Facts, information and skills acquired through experience or education."]],["wisdom","learning","expertise"],["ignorance"]],
+success:["/səkˈses/","सफलता",[["noun","The accomplishment of an aim or purpose."]],["achievement","triumph","victory"],["failure","defeat"]],
+failure:["/ˈfeɪljə/","असफलता",[["noun","Lack of success.","The plan ended in failure."]],["defeat","collapse","downfall"],["success","triumph"]],
+dictionary:["/ˈdɪkʃənri/","शब्दकोश",[["noun","A resource listing the words of a language with their meanings."]],["lexicon","glossary","wordbook"],[]],
+language:["/ˈlæŋɡwɪdʒ/","भाषा",[["noun","The method of human communication using words in a structured way."]],["tongue","speech","dialect"],[]],
+happy:["/ˈhæpi/","खुश",[["adjective","Feeling or showing pleasure and contentment.","a happy childhood"]],["glad","joyful","cheerful","content"],["sad","unhappy","miserable"]],
+sad:["/sæd/","उदास",[["adjective","Feeling sorrow; unhappy."]],["unhappy","sorrowful","downcast"],["happy","cheerful"]],
+angry:["/ˈæŋɡri/","क्रोधित",[["adjective","Feeling or showing strong annoyance or hostility."]],["furious","irate","enraged"],["calm","pleased"]],
+fear:["/fɪə/","डर",[["noun","An unpleasant emotion caused by the threat of danger."],["verb","To be afraid of."]],["dread","terror","fright"],["courage","confidence"]],
+love:["/lʌv/","प्रेम",[["noun","An intense feeling of deep affection."],["verb","To feel deep affection for."]],["affection","adoration","devotion"],["hate","loathing"]],
+hate:["/heɪt/","घृणा",[["verb","To feel intense dislike for."],["noun","Intense dislike."]],["loathe","detest","despise"],["love","adore"]],
+friend:["/frend/","मित्र",[["noun","A person with whom one has a bond of mutual affection."]],["companion","mate","ally"],["enemy","foe"]],
+enemy:["/ˈenəmi/","शत्रु",[["noun","A person actively opposed or hostile to someone."]],["foe","adversary","opponent"],["friend","ally"]],
+truth:["/truːθ/","सत्य",[["noun","That which is in accordance with fact or reality."]],["fact","reality","veracity"],["lie","falsehood"]],
+lie:["/laɪ/","झूठ",[["noun","An intentionally false statement."],["verb","To rest in a horizontal position."]],["falsehood","untruth","fib"],["truth"]],
+work:["/wɜːk/","काम",[["noun","Activity involving mental or physical effort done to achieve a result."],["verb","To be engaged in physical or mental activity to achieve a purpose."]],["labour","toil","employment"],["rest","leisure"]],
+rest:["/rest/","आराम",[["noun","Freedom from activity or labour."],["verb","To cease work in order to relax."]],["relaxation","repose","break"],["work","activity"]],
+money:["/ˈmʌni/","पैसा",[["noun","A current medium of exchange in the form of coins and banknotes."]],["cash","funds","currency"],[]],
+time:["/taɪm/","समय",[["noun","The indefinite continued progress of existence and events."],["noun","A point of time as measured in hours and minutes."]],["duration","period","era"],[]],
+water:["/ˈwɔːtə/","पानी",[["noun","A colourless, transparent liquid that forms the seas, lakes and rain."]],[],[]],
+food:["/fuːd/","भोजन",[["noun","Any nutritious substance that people or animals eat or drink."]],["nourishment","fare","sustenance"],[]],
+house:["/haʊs/","घर",[["noun","A building for human habitation."]],["home","residence","dwelling"],[]],
+school:["/skuːl/","विद्यालय",[["noun","An institution for educating children."]],["academy","institute"],[]],
+teacher:["/ˈtiːtʃə/","शिक्षक",[["noun","A person who teaches, especially in a school."]],["instructor","tutor","educator"],["student","pupil"]],
+student:["/ˈstjuːdnt/","छात्र",[["noun","A person studying at a school or college."]],["pupil","learner","scholar"],["teacher"]],
+book:["/bʊk/","पुस्तक",[["noun","A written or printed work consisting of pages bound together."],["verb","To reserve accommodation or a ticket."]],["volume","tome"],[]],
+write:["/raɪt/","लिखना",[["verb","To mark letters or words on a surface, typically with a pen."]],["compose","pen","draft"],["erase"]],
+read:["/riːd/","पढ़ना",[["verb","To look at and comprehend the meaning of written matter."]],["peruse","study","scan"],[]],
+learn:["/lɜːn/","सीखना",[["verb","To gain knowledge or skill by study, experience or being taught."]],["study","grasp","master"],["forget"]],
+teach:["/tiːtʃ/","सिखाना",[["verb","To impart knowledge to or instruct someone."]],["instruct","train","educate"],["learn"]],
+think:["/θɪŋk/","सोचना",[["verb","To have a particular opinion, belief or idea."],["verb","To direct one's mind towards someone or something."]],["ponder","reflect","consider"],[]],
+understand:["/ʌndəˈstænd/","समझना",[["verb","To perceive the intended meaning of words or a speaker."]],["comprehend","grasp","follow"],["misunderstand"]],
+remember:["/rɪˈmembə/","याद करना",[["verb","To have in or be able to bring to one's mind an awareness of."]],["recall","recollect","retain"],["forget"]],
+forget:["/fəˈɡet/","भूलना",[["verb","To fail to remember."]],["overlook","omit"],["remember","recall"]],
+begin:["/bɪˈɡɪn/","शुरू करना",[["verb","To start; to perform the first part of an action."]],["start","commence","initiate"],["end","finish"]],
+finish:["/ˈfɪnɪʃ/","समाप्त करना",[["verb","To bring a task or activity to an end."]],["complete","conclude","end"],["begin","start"]],
+change:["/tʃeɪndʒ/","बदलाव",[["verb","To make or become different."],["noun","The act of becoming different."]],["alter","modify","transform"],["remain","stay"]],
+grow:["/ɡrəʊ/","बढ़ना",[["verb","To increase in size, amount or degree by a natural process."]],["expand","develop","flourish"],["shrink","decline"]],
+build:["/bɪld/","बनाना",[["verb","To construct something by putting parts together."]],["construct","erect","assemble"],["destroy","demolish"]],
+destroy:["/dɪˈstrɔɪ/","नष्ट करना",[["verb","To put an end to the existence of something."]],["ruin","demolish","wreck"],["build","create"]],
+create:["/kriˈeɪt/","सृजन करना",[["verb","To bring something into existence."]],["make","produce","generate"],["destroy"]],
+strong:["/strɒŋ/","मजबूत",[["adjective","Having the power to move heavy weights or perform physically demanding tasks."],["adjective","Able to withstand force or pressure."]],["powerful","sturdy","robust"],["weak","frail"]],
+weak:["/wiːk/","कमजोर",[["adjective","Lacking physical strength and energy."]],["feeble","frail","fragile"],["strong","powerful"]],
+brave:["/breɪv/","बहादुर",[["adjective","Ready to face and endure danger or pain."]],["courageous","fearless","valiant"],["cowardly","timid"]],
+honest:["/ˈɒnɪst/","ईमानदार",[["adjective","Free of deceit; truthful and sincere."]],["truthful","sincere","upright"],["dishonest","deceitful"]],
+kind:["/kaɪnd/","दयालु",[["adjective","Having a friendly, generous and considerate nature."],["noun","A group of people or things having similar characteristics."]],["caring","compassionate","generous"],["cruel","unkind"]],
+cruel:["/ˈkruːəl/","क्रूर",[["adjective","Wilfully causing pain or suffering to others."]],["brutal","merciless","harsh"],["kind","gentle"]],
+patience:["/ˈpeɪʃns/","धैर्य",[["noun","The capacity to accept delay or trouble without becoming annoyed."]],["forbearance","tolerance","calm"],["impatience"]],
+wisdom:["/ˈwɪzdəm/","बुद्धि",[["noun","The quality of having experience, knowledge and good judgement."]],["insight","sagacity","prudence"],["folly","stupidity"]],
+effort:["/ˈefət/","प्रयास",[["noun","A vigorous or determined attempt.","It took a real effort to finish."]],["attempt","endeavour","exertion"],[]],
+practice:["/ˈpræktɪs/","अभ्यास",[["noun","Repeated exercise in an activity to acquire or improve skill."]],["training","rehearsal","drill"],["theory"]],
+progress:["/ˈprəʊɡres/","प्रगति",[["noun","Forward movement towards a destination or goal."]],["advancement","development","headway"],["regression","decline"]],
+opportunity:["/ˌɒpəˈtjuːnəti/","अवसर",[["noun","A set of circumstances that makes it possible to do something."]],["chance","opening","occasion"],[]],
+decision:["/dɪˈsɪʒn/","निर्णय",[["noun","A conclusion or resolution reached after consideration."]],["choice","resolution","verdict"],["indecision"]],
+problem:["/ˈprɒbləm/","समस्या",[["noun","A matter regarded as unwelcome and needing to be dealt with."]],["difficulty","issue","trouble"],["solution"]],
+solution:["/səˈluːʃn/","समाधान",[["noun","A means of solving a problem."],["noun","A liquid mixture in which a solute is dissolved."]],["answer","remedy","resolution"],["problem"]],
+question:["/ˈkwestʃən/","प्रश्न",[["noun","A sentence worded so as to elicit information."]],["query","enquiry"],["answer"]],
+answer:["/ˈɑːnsə/","उत्तर",[["noun","A thing said or written in reaction to a question."],["verb","To respond to a question."]],["reply","response"],["question"]],
+important:["/ɪmˈpɔːtnt/","महत्वपूर्ण",[["adjective","Of great significance or value."]],["significant","crucial","vital"],["trivial","minor"]],
+difficult:["/ˈdɪfɪkəlt/","कठिन",[["adjective","Needing much effort or skill to accomplish."]],["hard","tough","challenging"],["easy","simple"]],
+easy:["/ˈiːzi/","आसान",[["adjective","Achieved without great effort."]],["simple","effortless","straightforward"],["difficult","hard"]],
+beauty:["/ˈbjuːti/","सौंदर्य",[["noun","A combination of qualities that pleases the aesthetic senses."]],["loveliness","grace","charm"],["ugliness"]],
+health:["/helθ/","स्वास्थ्य",[["noun","The state of being free from illness or injury."]],["wellbeing","fitness","vitality"],["illness","sickness"]],
+peace:["/piːs/","शांति",[["noun","Freedom from disturbance; tranquillity."],["noun","A state in which there is no war."]],["calm","tranquillity","harmony"],["war","conflict"]],
+war:["/wɔː/","युद्ध",[["noun","A state of armed conflict between nations or groups."]],["conflict","warfare","battle"],["peace"]],
+freedom:["/ˈfriːdəm/","स्वतंत्रता",[["noun","The power to act, speak or think as one wants."]],["liberty","independence","autonomy"],["slavery","captivity"]],
+justice:["/ˈdʒʌstɪs/","न्याय",[["noun","Just behaviour or treatment; fairness."]],["fairness","equity","righteousness"],["injustice"]],
+respect:["/rɪˈspekt/","सम्मान",[["noun","A feeling of deep admiration for someone or something."],["verb","To admire deeply."]],["esteem","regard","admiration"],["contempt","disdain"]],
+trust:["/trʌst/","विश्वास",[["noun","Firm belief in the reliability or truth of someone."],["verb","To believe in the reliability of."]],["faith","confidence","reliance"],["distrust","doubt"]],
+doubt:["/daʊt/","संदेह",[["noun","A feeling of uncertainty about something."],["verb","To feel uncertain about."]],["uncertainty","suspicion","misgiving"],["certainty","trust"]],
+hope:["/həʊp/","आशा",[["noun","A feeling of expectation and desire for something to happen."],["verb","To want something to happen."]],["optimism","expectation","aspiration"],["despair"]],
+dream:["/driːm/","सपना",[["noun","A series of images occurring in a person's mind during sleep."],["noun","A cherished ambition."]],["vision","aspiration","fantasy"],[]],
+memory:["/ˈmeməri/","स्मृति",[["noun","The faculty by which the mind stores and remembers information."]],["recollection","remembrance"],[]],
+journey:["/ˈdʒɜːni/","यात्रा",[["noun","An act of travelling from one place to another."]],["trip","voyage","expedition"],[]],
+nature:["/ˈneɪtʃə/","प्रकृति",[["noun","The physical world collectively, including plants, animals and landscape."],["noun","The basic qualities of a person or thing."]],["environment","character","essence"],[]],
+weather:["/ˈweðə/","मौसम",[["noun","The state of the atmosphere at a place and time."]],["climate","conditions"],[]],
+light:["/laɪt/","प्रकाश",[["noun","The natural agent that makes things visible."],["adjective","Of little weight."]],["brightness","glow","illumination"],["darkness","heavy"]],
+dark:["/dɑːk/","अंधेरा",[["adjective","With little or no light."]],["dim","gloomy","shadowy"],["light","bright"]],
+silence:["/ˈsaɪləns/","मौन",[["noun","Complete absence of sound."]],["quiet","stillness","hush"],["noise","sound"]],
+voice:["/vɔɪs/","आवाज़",[["noun","The sound produced in a person's larynx and uttered through the mouth."]],["tone","sound","utterance"],[]],
+mind:["/maɪnd/","मन",[["noun","The element of a person that enables thought and feeling."],["verb","To be distressed or annoyed by."]],["intellect","psyche","brain"],[]],
+heart:["/hɑːt/","हृदय",[["noun","The organ that pumps blood through the body."],["noun","The central or most important part."]],["core","centre","soul"],[]],
+family:["/ˈfæməli/","परिवार",[["noun","A group of people related by blood or marriage."]],["household","kin","relatives"],[]],
+world:["/wɜːld/","संसार",[["noun","The earth, together with all of its countries and peoples."]],["earth","globe","planet"],[]],
+future:["/ˈfjuːtʃə/","भविष्य",[["noun","The time that is still to come."]],["hereafter","tomorrow"],["past","history"]],
+past:["/pɑːst/","अतीत",[["noun","The time before the present."],["adjective","Gone by in time."]],["history","bygone"],["future","present"]],
+present:["/ˈpreznt/","वर्तमान",[["noun","The period of time now occurring."],["noun","A gift."],["adjective","Being in a particular place."]],["current","gift","now"],["absent","past"]],
+strength:["/streŋθ/","शक्ति",[["noun","The quality of being physically strong."],["noun","A good or beneficial quality."]],["power","might","force"],["weakness"]],
+gratitude:["/ˈɡrætɪtjuːd/","कृतज्ञता",[["noun","The quality of being thankful."]],["thankfulness","appreciation"],["ingratitude"]],
+generous:["/ˈdʒenərəs/","उदार",[["adjective","Showing readiness to give more than is expected."]],["liberal","charitable","giving"],["stingy","mean"]],
+humble:["/ˈhʌmbl/","विनम्र",[["adjective","Having a modest view of one's own importance."]],["modest","unassuming","meek"],["arrogant","proud"]],
+arrogant:["/ˈærəɡənt/","घमंडी",[["adjective","Having an exaggerated sense of one's own importance."]],["haughty","conceited","proud"],["humble","modest"]],
+curious:["/ˈkjʊəriəs/","जिज्ञासु",[["adjective","Eager to know or learn something."],["adjective","Strange; unusual."]],["inquisitive","interested","odd"],["indifferent"]],
+diligent:["/ˈdɪlɪdʒənt/","परिश्रमी",[["adjective","Showing care and conscientiousness in one's work."]],["hardworking","industrious","assiduous"],["lazy","negligent"]],
+lazy:["/ˈleɪzi/","आलसी",[["adjective","Unwilling to work or use energy."]],["idle","indolent","slothful"],["diligent","industrious"]],
+ancient:["/ˈeɪnʃənt/","प्राचीन",[["adjective","Belonging to the very distant past."]],["antique","age-old","archaic"],["modern","recent"]],
+modern:["/ˈmɒdn/","आधुनिक",[["adjective","Relating to the present or recent times."]],["contemporary","current","up-to-date"],["ancient","old"]],
+serious:["/ˈsɪəriəs/","गंभीर",[["adjective","Demanding careful consideration; not slight."],["adjective","Solemn or thoughtful in character."]],["grave","earnest","severe"],["trivial","light-hearted"]],
+urgent:["/ˈɜːdʒənt/","अत्यावश्यक",[["adjective","Requiring immediate action or attention."]],["pressing","critical","immediate"],["unimportant"]],
+ability:["/əˈbɪləti/","क्षमता",[["noun","Possession of the means or skill to do something."]],["capability","skill","competence"],["inability"]],
+achieve:["/əˈtʃiːv/","हासिल करना",[["verb","To successfully bring about by effort or skill."]],["accomplish","attain","realise"],["fail"]],
+improve:["/ɪmˈpruːv/","सुधारना",[["verb","To make or become better."]],["enhance","upgrade","refine"],["worsen"]],
+develop:["/dɪˈveləp/","विकसित करना",[["verb","To grow or cause to grow and become more advanced."]],["evolve","expand","advance"],["decline"]],
+explain:["/ɪkˈspleɪn/","समझाना",[["verb","To make an idea or situation clear by describing it in detail."]],["clarify","describe","elucidate"],["confuse","obscure"]],
+describe:["/dɪˈskraɪb/","वर्णन करना",[["verb","To give an account in words of someone or something."]],["depict","portray","detail"],[]],
+suggest:["/səˈdʒest/","सुझाव देना",[["verb","To put forward an idea for consideration."]],["propose","recommend","advise"],[]],
+accept:["/əkˈsept/","स्वीकार करना",[["verb","To consent to receive or undertake something offered."]],["receive","agree","approve"],["reject","refuse"]],
+reject:["/rɪˈdʒekt/","अस्वीकार करना",[["verb","To dismiss as inadequate or faulty."]],["refuse","decline","rebuff"],["accept","approve"]],
+allow:["/əˈlaʊ/","अनुमति देना",[["verb","To let someone do something; to permit."]],["permit","let","authorise"],["forbid","prevent"]],
+prevent:["/prɪˈvent/","रोकना",[["verb","To keep something from happening."]],["stop","hinder","avert"],["allow","enable"]],
+increase:["/ɪnˈkriːs/","वृद्धि",[["verb","To become or make greater in size, amount or intensity."]],["rise","grow","expand"],["decrease","reduce"]],
+decrease:["/dɪˈkriːs/","कमी",[["verb","To become or make smaller or fewer."]],["reduce","diminish","decline"],["increase","grow"]],
+grab:["/ɡræb/","पकड़ना, छीनना, झपटना",[["verb","To grip suddenly; to seize or clutch.","I grabbed her hand to pull her back."],["verb","To make a sudden grasping or clutching motion."],["verb","To restrain or arrest someone."],["verb","To grip the attention of; to interest.","How does that idea grab you?"],["noun","A sudden snatch at something."],["noun","An acquisition by violent or unjust means."]],["seize","clutch","snatch","grasp"],["release","let go"]],
+rumbling:["/ˈrʌmblɪŋ/","असंतोषसूचक, गड़गड़ाहट, घड़घड़ाहट, घर्घर",[["adjective","Deep- and slow-sounding.","rumbling discontent"],["noun","A muted sound of complaint or discontent (often used in the plural).","The rumblings of the masses precede the crumbling of the state."],["noun","A deep low noise.","The rumbling of distant thunder echoed from the hilltop."]],["grumbling","growling","thunder"],["silence","quiet"]]
+};
+
+/* ---------------- helpers ---------------- */
+const $ = id => document.getElementById(id);
+const input = $("w"), goBtn = $("go"), card = $("card");
+const emptyHint = $("emptyHint");
+const menuBtn = $("menuBtn"), menuOverlay = $("menuOverlay"), menuClose = $("menuClose");
+const modeBadge = $("modeBadge");
+const CACHE = "saurav_dict_v8";
+
+let currentMode = "en-hi"; // en-hi | hi-en | en-en | syn | ant
+
+const MODE_LABELS = {
+  "en-hi": "English → Hindi",
+  "hi-en": "Hindi → English",
+  "en-en": "English → English",
+  "syn": "Only Synonyms",
+  "ant": "Only Antonyms"
+};
+
+const norm = s => (s||"").trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z\-'\u0900-\u097F]/g,"");
+const esc = s => String(s||"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function getCache(){ try{ return JSON.parse(localStorage.getItem(CACHE)||"{}"); }catch{ return {}; } }
+function putCache(w,d){
+  try{
+    const c = getCache(); c[w] = {...d, ts:Date.now()};
+    const k = Object.keys(c);
+    if (k.length > 300) k.sort((a,b)=>c[a].ts-c[b].ts).slice(0,k.length-300).forEach(x=>delete c[x]);
+    localStorage.setItem(CACHE, JSON.stringify(c));
+  }catch{}
+}
+
+/* ---------------- menu ---------------- */
+function openMenu(){ menuOverlay.classList.add("open"); }
+function closeMenu(){ menuOverlay.classList.remove("open"); }
+menuBtn.addEventListener("click", openMenu);
+menuClose.addEventListener("click", closeMenu);
+menuOverlay.addEventListener("click", e => { if (e.target === menuOverlay) closeMenu(); });
+
+document.querySelectorAll(".menu-item").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".menu-item").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentMode = btn.dataset.mode;
+    modeBadge.innerHTML = `<span>${MODE_LABELS[currentMode]}</span>`;
+    closeMenu();
+    // update placeholder
+    if (currentMode === "hi-en") {
+      input.placeholder = "Type a Hindi word…";
+    } else {
+      input.placeholder = "Type any word…";
+    }
+    // re-render current result if any
+    if (card.dataset.lastWord) {
+      lookup(card.dataset.lastWord, true);
+    }
+  });
+});
+
+/* ---------------- rendering ---------------- */
+function renderEntry(e, fromOnline){
+  emptyHint.style.display = "none";
+  card.classList.remove("hidden");
+  card.dataset.lastWord = e.word;
+
+  const showHindi = (currentMode === "en-hi" || currentMode === "hi-en");
+  const showDefs  = (currentMode === "en-hi" || currentMode === "hi-en" || currentMode === "en-en");
+  const showSyn   = (currentMode === "en-hi" || currentMode === "en-en" || currentMode === "syn" || currentMode === "hi-en");
+  const showAnt   = (currentMode === "en-hi" || currentMode === "en-en" || currentMode === "ant" || currentMode === "hi-en");
+  const onlySyn   = currentMode === "syn";
+  const onlyAnt   = currentMode === "ant";
+
+  let body = "";
+
+  // Header always shown
+  body += `
+    <div class="hd">
+      <div style="min-width:0">
+        <div class="word-row">
+          <div class="word">${esc(e.word)}</div>
+          ${fromOnline ? '<span class="online-badge">online</span>' : ''}
+        </div>
+        ${e.ipa ? `<div class="ipa">${esc(e.ipa)}</div>` : ""}
+      </div>
+      <button class="spk" id="spk" aria-label="Pronounce">🔊</button>
+    </div>`;
+
+  if (onlySyn) {
+    const syn = (e.syn||[]).length
+      ? e.syn.slice(0,20).map(s=>`<span class="tag">${esc(s)}</span>`).join("")
+      : '<span class="none">No synonyms found</span>';
+    body += `<div class="sec"><h4>Synonyms</h4><div class="tags">${syn}</div></div>`;
+  } else if (onlyAnt) {
+    const ant = (e.ant||[]).length
+      ? e.ant.slice(0,16).map(a=>`<span class="tag ant">${esc(a)}</span>`).join("")
+      : '<span class="none">No antonyms found</span>';
+    body += `<div class="sec"><h4>Antonyms</h4><div class="tags">${ant}</div></div>`;
+  } else {
+    if (showHindi) {
+      let hi = (e.hindi || "—").trim();
+      // Don't show English word / empty / placeholder as Hindi meaning
+      if (!hi || hi === "—" || hi.toLowerCase() === (e.word||"").toLowerCase() || !/[\u0900-\u097F]/.test(hi)) {
+        hi = "—";
+      }
+      body += `<div class="sec"><h4>Hindi Meaning</h4><div class="hindi">${esc(hi)}</div></div>`;
+    }
+    if (showDefs) {
+      body += `<div class="sec"><h4>English Meaning</h4></div>`;
+      const meanings = (e.meanings||[]).slice(0,6).map(m => `
+        <div class="sec" style="margin-top:12px">
+          <span class="pos">${esc(m.pos)}</span>
+          ${(m.defs||[]).slice(0,5).map((d,i)=>`
+            <div class="def">${i+1}. ${esc(d.def)}${d.ex ? `<em>“${esc(d.ex)}”</em>` : ""}</div>`).join("")}
+        </div>`).join("");
+      body += meanings || '<div class="def">No definitions available.</div>';
+    }
+    if (showSyn && !onlyAnt) {
+      const syn = (e.syn||[]).length
+        ? e.syn.slice(0,14).map(s=>`<span class="tag">${esc(s)}</span>`).join("")
+        : '<span class="none">—</span>';
+      body += `<div class="sec"><h4>Synonyms</h4><div class="tags">${syn}</div></div>`;
+    }
+    if (showAnt && !onlySyn) {
+      const ant = (e.ant||[]).length
+        ? e.ant.slice(0,10).map(a=>`<span class="tag ant">${esc(a)}</span>`).join("")
+        : '<span class="none">—</span>';
+      body += `<div class="sec"><h4>Antonyms</h4><div class="tags">${ant}</div></div>`;
+    }
+  }
+
+  card.innerHTML = body;
+  $("spk").onclick = () => speak(e.word, e.audio);
+}
+
+function showLoading(w){
+  emptyHint.style.display = "none";
+  card.classList.remove("hidden");
+  card.innerHTML = `<div class="load"><div class="spin"></div>Looking up “${esc(w)}”…</div>`;
+}
+function showError(msg, detail){
+  emptyHint.style.display = "none";
+  card.classList.remove("hidden");
+  card.innerHTML = `<div class="err">${esc(msg)}${detail ? `<small>${esc(detail)}</small>` : ""}</div>`;
+}
+
+/* Pronunciation */
+function speak(word, audioUrl){
+  if (audioUrl){
+    const a = new Audio(audioUrl);
+    a.play().catch(()=>ttsSpeak(word));
+    return;
+  }
+  ttsSpeak(word);
+}
+function ttsSpeak(word){
+  try{
+    if (!("speechSynthesis" in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(word);
+    u.lang = "en-US"; u.rate = 0.85;
+    speechSynthesis.speak(u);
+  }catch{}
+}
+
+/* ---------------- lookup ---------------- */
+function fromDB(w){
+  const r = DB[w]; if (!r) return null;
+  return {
+    word:w, ipa:r[0], hindi:r[1], audio:null,
+    meanings:(r[2]||[]).map(m=>({pos:m[0], defs:[{def:m[1], ex:m[2]||""}]}))
+                        .reduce((acc,m)=>{
+                          const prev = acc.find(x=>x.pos===m.pos);
+                          if (prev) prev.defs.push(...m.defs); else acc.push(m);
+                          return acc;
+                        },[]),
+    syn:r[3]||[], ant:r[4]||[]
+  };
+}
+
+async function fetchJSON(url, ms){
+  const c = new AbortController();
+  const t = setTimeout(()=>c.abort(), ms);
+  try{
+    const res = await fetch(url, {signal:c.signal});
+    clearTimeout(t);
+    return res.ok ? await res.json() : null;
+  }catch(e){ clearTimeout(t); return null; }
+}
+
+function parseFree(data, w){
+  let ipa = "", audio = null;
+  const meanings = [], syn = new Set(), ant = new Set();
+  (data.entries||[]).forEach(en=>{
+    (en.pronunciations||[]).forEach(p=>{
+      if (!ipa && p.text) ipa = p.text;
+      if (!audio && p.audio) audio = p.audio.startsWith("//") ? "https:"+p.audio : p.audio;
+    });
+    const defs = (en.senses||[]).map(s=>({
+      def: s.definition || (s.glosses||[])[0] || "",
+      ex: (s.examples||[])[0] || ""
+    })).filter(d=>d.def);
+    (en.synonyms||[]).forEach(s=>syn.add(s));
+    (en.antonyms||[]).forEach(a=>ant.add(a));
+    (en.senses||[]).forEach(s=>{
+      (s.synonyms||[]).forEach(x=>syn.add(x));
+      (s.antonyms||[]).forEach(x=>ant.add(x));
+    });
+    if (defs.length) meanings.push({pos: en.partOfSpeech || "unknown", defs});
+  });
+  return meanings.length ? {word:w, ipa, audio, hindi:"—", meanings, syn:[...syn], ant:[...ant]} : null;
+}
+
+function parseSuvankar(data, w){
+  const meanings = [], syn = new Set(), ant = new Set();
+  (data.meanings||[]).forEach(m=>{
+    const defs = (m.senses||[]).map(s=>({
+      def:(s.glosses||[])[0]||"", ex:(s.examples||[])[0]||""
+    })).filter(d=>d.def);
+    (m.senses||[]).forEach(s=>{
+      (s.synonyms||[]).forEach(x=>syn.add(x));
+      (s.antonyms||[]).forEach(x=>ant.add(x));
+    });
+    if (defs.length) meanings.push({pos:m.partOfSpeech||"unknown", defs});
+  });
+  return meanings.length
+    ? {word:w, ipa:data.ipa||"", audio:data.audioUrl||null, hindi:"—", meanings, syn:[...syn], ant:[...ant]}
+    : null;
+}
+
+async function fetchHindi(w){
+  // 1. Vocab24 (best quality for the ~16k words they cover)
+  // Try direct first, then CORS proxies (needed for file:// and some WebViews)
+  const vocabUrls = [
+    `https://vocab24.com/dictionary/${encodeURIComponent(w)}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent("https://vocab24.com/dictionary/" + w)}`,
+    `https://corsproxy.io/?${encodeURIComponent("https://vocab24.com/dictionary/" + w)}`
+  ];
+  for (const url of vocabUrls) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 7000);
+      const res = await fetch(url, { signal: ctrl.signal });
+      clearTimeout(t);
+      if (!res.ok) continue;
+      const html = await res.text();
+      if (/page not found|does not exist/i.test(html) && !/dict-hindi/i.test(html)) continue;
+      // <p class="dict-hindi ..."><span>Hindi meaning:</span>पकड़ना, छीनना, झपटना</p>
+      let m = html.match(/Hindi meaning:\s*<\/span>\s*([^<]+)/i)
+            || html.match(/class="dict-hindi[^"]*"[^>]*>[\s\S]*?<\/span>\s*([^<]+)/i)
+            || html.match(/Hindi meaning[:\s]+([^<\n]{2,80})/i);
+      if (m && m[1]) {
+        let hindi = m[1]
+          .replace(/&amp;/g,"&").replace(/&lt;/g,"<").replace(/&gt;/g,">")
+          .replace(/&#39;/g,"'").replace(/&quot;/g,'"').trim();
+        hindi = hindi.replace(/\s*\|\s*Vocab24.*$/i,"").replace(/^[\s:–—-]+/,"").trim();
+        if (hindi && /[\u0900-\u097F]/.test(hindi) && hindi.length > 1 && !/not found|no meaning|page not/i.test(hindi)) {
+          return hindi;
+        }
+      }
+      // Title fallback: "Grab Meaning in Hindi – पकड़ना, छीनना..."
+      m = html.match(/<title>[^<]*?[–—|-]\s*([^|<]+?)(?:\s*\||$)/i);
+      if (m && m[1] && /[\u0900-\u097F]/.test(m[1])) {
+        return m[1].replace(/\s*\|\s*Vocab24.*$/i,"").trim();
+      }
+    } catch (e) { /* try next proxy */ }
+  }
+
+  // 2. Fallback – MyMemory (machine translation)
+  try {
+    const d = await fetchJSON(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(w)}&langpair=en|hi`, 5000);
+    const t = d && d.responseData && d.responseData.translatedText;
+    if (t && !/MYMEMORY WARNING|QUERY LENGTH|YOU USED ALL/i.test(t) && /[\u0900-\u097F]/.test(t)) {
+      return t;
+    }
+  } catch (e) {}
+
+  return "—";
+}
+
+async function fetchEnglishFromHindi(w){
+  const d = await fetchJSON(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(w)}&langpair=hi|en`, 6000);
+  const t = d && d.responseData && d.responseData.translatedText;
+  return (t && !t.includes("MYMEMORY WARNING") && !t.includes("QUERY LENGTH")) ? t.trim().toLowerCase().split(/\s+/)[0] : null;
+}
+
+async function lookup(raw, forceRerender){
+  let w = norm(raw);
+  if (!w){ input.focus(); return; }
+  input.value = forceRerender ? input.value : w;
+
+  // Hindi → English mode: first translate Hindi to English word
+  let fromOnline = false;
+  if (currentMode === "hi-en" && /[\u0900-\u097F]/.test(w)) {
+    goBtn.disabled = true; showLoading(w);
+    const eng = await fetchEnglishFromHindi(w);
+    if (!eng) {
+      showError(`Could not translate “${w}”`, "Try a different Hindi word or check spelling.");
+      goBtn.disabled = false;
+      return;
+    }
+    w = eng;
+    fromOnline = true;
+  }
+
+  const local = fromDB(w);
+  if (local){
+    renderEntry(local, fromOnline);
+    goBtn.disabled = false;
+    return;
+  }
+
+  const c = getCache()[w];
+  if (c && c.entry){
+    renderEntry(c.entry, true);
+    goBtn.disabled = false;
+    return;
+  }
+
+  if (!navigator.onLine){
+    showError(`“${w}” isn't saved on this device`, "Connect to the internet once and it will be saved for offline use.");
+    goBtn.disabled = false;
+    return;
+  }
+
+  goBtn.disabled = true; showLoading(w);
+  let entry = null;
+
+  const d1 = await fetchJSON(`https://freedictionaryapi.com/api/v1/entries/en/${encodeURIComponent(w)}`, 9000);
+  if (d1) entry = parseFree(d1, w);
+
+  if (!entry){
+    const d2 = await fetchJSON(`https://api.suvankar.cc/dictionaryapi/v1/definitions/en/${encodeURIComponent(w)}`, 8000);
+    if (d2) entry = parseSuvankar(d2, w);
+  }
+
+  if (entry){
+    if (currentMode !== "en-en" && currentMode !== "syn" && currentMode !== "ant") {
+      entry.hindi = await fetchHindi(w);
+    }
+    putCache(w, {entry});
+    renderEntry(entry, true);
+  } else {
+    showError(`No definition found for “${w}”`, "Check the spelling and try again.");
+  }
+  goBtn.disabled = false;
+}
+
+goBtn.addEventListener("click", ()=>lookup(input.value));
+input.addEventListener("keydown", e=>{ if (e.key === "Enter") lookup(input.value); });
+</script>
+</body>
+</html>
